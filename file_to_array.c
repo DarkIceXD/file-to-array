@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <string.h>
 
+const int add_basic_mime_type = 1;
 struct file
 {
     char *file_name;
@@ -86,6 +87,33 @@ void list_files_recursively(const char *base_path, struct file_head *head)
     closedir(dir);
 }
 
+static const char *extension_to_type(const char *extension)
+{
+    struct extension
+    {
+        const char *file_extension;
+        const char *type;
+    };
+    static const struct extension e[] = {
+        {"txt", "text/plain"},
+        {"htm", "text/html"},
+        {"html", "text/html"},
+        {"js", "text/javascript"},
+        {"css", "text/css"},
+        {"png", "image/png"},
+        {"jpg", "image/jpeg"},
+        {"svg", "image/svg+xml"},
+    };
+    for (int i = 0; i < sizeof(e) / sizeof(e[0]); i++)
+    {
+        if (strncmp(extension, e[i].file_extension, strlen(e[i].file_extension)))
+            continue;
+
+        return e[i].type;
+    }
+    return NULL;
+}
+
 int main(int argc, char const *argv[])
 {
     if (argc < 2)
@@ -99,7 +127,10 @@ int main(int argc, char const *argv[])
     if (!file)
         return 0;
     const int base_len = strlen(argv[1]);
-    fputs("struct entry\n{\n\tconst char *file_name;\n\tconst int data_size;\n\tconst char *data;\n};\n\nstatic const struct entry entries[] = {", file);
+    fputs("struct entry\n{\n\tconst char *file_name;\n\t", file);
+    if (add_basic_mime_type)
+        fputs("const char *mime_type;\n\t", file);
+    fputs("const int data_size;\n\tconst char *data;\n};\n\nstatic const struct entry entries[] = {", file);
     struct file *elem = head.head;
     char temp[64];
     while (elem)
@@ -107,6 +138,20 @@ int main(int argc, char const *argv[])
         fputs("\n\t{\"", file);
         fputs(base_len + elem->file_name, file);
         fputs("\", ", file);
+        if (add_basic_mime_type)
+        {
+            const char *mime_type = extension_to_type(strrchr(base_len + elem->file_name, '.') + 1);
+            if (mime_type)
+            {
+                fputs("\"", file);
+                fputs(mime_type, file);
+                fputs("\", ", file);
+            }
+            else
+            {
+                fputs("0, ", file);
+            }
+        }
         snprintf(temp, 64, "%ld", elem->content_length);
         fputs(temp, file);
         fputs(", \"", file);
