@@ -4,11 +4,12 @@
 #include <string.h>
 
 const int add_basic_mime_type = 1;
+
 struct file
 {
     char *file_name;
     unsigned char *content;
-    long content_length;
+    size_t content_length;
     struct file *next;
 };
 
@@ -18,7 +19,7 @@ struct file_head
     struct file *tail;
 };
 
-struct file *init_file(const char *file_name, unsigned char *content, long content_length)
+struct file *init_file(const char *file_name, unsigned char *content, const long content_length)
 {
     struct file *f = malloc(sizeof(struct file));
     f->file_name = malloc(strlen(file_name) + 1);
@@ -104,7 +105,7 @@ static const char *extension_to_type(const char *extension)
         {"jpg", "image/jpeg"},
         {"svg", "image/svg+xml"},
     };
-    for (int i = 0; i < sizeof(e) / sizeof(e[0]); i++)
+    for (size_t i = 0; i < sizeof(e) / sizeof(e[0]); i++)
     {
         if (strncmp(extension, e[i].file_extension, strlen(e[i].file_extension)))
             continue;
@@ -155,7 +156,7 @@ int main(int argc, char const *argv[])
         snprintf(temp, 64, "%ld", elem->content_length);
         fputs(temp, file);
         fputs(", \"", file);
-        for (int i = 0; i < elem->content_length; i++)
+        for (size_t i = 0; i < elem->content_length; i++)
         {
             snprintf(temp, 64, "\\x%02x", elem->content[i]);
             fputs(temp, file);
